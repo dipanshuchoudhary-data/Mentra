@@ -1,29 +1,53 @@
-from fastapi import FastAPI
+
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from core.task_manager import TaskManager
-from core.state import TaskState
+from api.dependencies import guarded
+from api.models import TaskResponse, TaskListResponse
 
 router = APIRouter()
-task_manager = TaskManager()
+manager = TaskManager()
 
-class CreateTaskRequest(BaseModel):
-    user_id:str
-    message:str
 
-@router.post("/create")
-async def create_task(req: CreateTaskRequest):
-    task = task_manager.create_task(
-        user_id=req.user_id,
-        message = req.message
-    )
+class TaskCreate(BaseModel):
+    message: str
 
-    return{
-        "task_id":task.task_id,
-        "state":task.state,
-        "summary":task.summary
-    }
 
-@router.get("/{task_id}")
-async def get_task(task_id:str):
-    task = task_manager.get_task(task_id)
+@router.post("/", response_model=TaskResponse)
+def create_task(
+    req: TaskCreate,
+    user_id: str = Depends(guarded),
+):
+    task = manager.create_task(user_id=user_id, message=req.message)
     return task.model_dump()
+
+
+@router.get("/{task_id}", response_model=TaskResponse)
+def get_task(
+    task_id: str,
+    user_id: str = Depends(guarded),
+):
+    try:
+        task = manager.get_task(task_id, user_id)
+        return task.model_dump()
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+
+@router.get("/", response_model=TaskListResponse)
+def list_tasks(
+    limit: int = Query(10, le=50),
+    cursor: str | None = Query(None),
+    user_id: str = Depends(guarded),
+):
+    tasks, next_cursor = manager.list_tasks(
+        user_id=user_id,
+        limit=limit,
+        cursor=cursor,
+    )
+    return {
+        "tasks": [t.model_dump() for t in tasks],
+        "next_cursor": next_cursor,
+    }
