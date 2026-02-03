@@ -1,4 +1,4 @@
-from core.permissions import RiskLevel
+from backend.core.permissions import RiskLevel
 
 def classify_policy(text:str) -> RiskLevel:
     if "delete" in text.lower() or "remove" in text.lower():

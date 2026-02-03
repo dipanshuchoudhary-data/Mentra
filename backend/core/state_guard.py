@@ -1,4 +1,4 @@
-from core.states import TaskState
+from backend.core.states import TaskState
 
 ALLOWED_TRANSITIONS = {
     TaskState.CREATED: {TaskState.PLANNING},

@@ -1,7 +1,7 @@
 
-from core.states import TaskState
-from core.result_schema import ExecutionResult
-from audit.logger import audit_log
+from backend.core.states import TaskState
+from backend.core.result_schema import ExecutionResult
+from backend.audit.logger import audit_log
 
 
 def verify_execution(task):
