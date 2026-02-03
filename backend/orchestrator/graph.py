@@ -1,64 +1,61 @@
-# backend/orchestrator/graph.py
-from langgraph.graph import StateGraph,START,END
-from core.states import TaskState
-from core.permissions import requires_approval
-from agents.planner import plan_task
-from agents.security import assess_risk
-from execution.registry import get_execution_adapter
-from core.verification import verify_execution
-from audit.logger import audit_log
+from typing import Dict, Any
 
-async def planning_node(task):
-    task.state = TaskState.PLANNING
-    task.summary = await plan_task(task.message)
-    audit_log(task.task_id, "PLANNED")
-    return task
+from langgraph.graph import StateGraph, START, END
 
-def risk_node(task):
-    task.risk = assess_risk(task.message)
-    audit_log(task.task_id, f"RISK_{task.risk}")
-    return task
+from backend.agents.planner import plan_task
+from backend.orchestrator.workflow import execute_tools
 
-def approval_gate(task):
-    if requires_approval(task.risk):
-        task.state = TaskState.AWAITING_APPROVAL
-        audit_log(task.task_id, "AWAITING_APPROVAL")
-        return task
-    task.state = TaskState.EXECUTING
-    return task
 
-async def execution_node(task):
-    adapter = get_execution_adapter()
-    audit_log(task.task_id, "EXECUTION_START")
+# ------------------ condition ------------------
 
-    task.execution_result = await adapter.execute(
-        task_id=task.task_id,
-        payload={
-            "message": task.message,
-            "plan": task.summary,
-        },
-    )
+def has_tool_calls(state: Dict[str, Any]) -> bool:
+    """
+    HARD EXECUTION GATE (code decides, not LLM)
 
-    task.state = TaskState.VERIFYING
-    audit_log(task.task_id, "EXECUTION_DONE")
-    return task
+    We keep this function name for compatibility,
+    but it no longer checks LLM tool calls.
 
-def verify_node(task):
-    return verify_execution(task)
+    It returns True only when:
+    - intent == add_expense
+    - required slots are present
+    """
 
-graph = StateGraph(object)
+    intent = state.get("intent")
+    slots = state.get("slots") or {}
 
-graph.add_node("plan", planning_node)
-graph.add_node("risk", risk_node)
-graph.add_node("approve", approval_gate)
-graph.add_node("execute", execution_node)
-graph.add_node("verify", verify_node)
+    if intent != "add_expense":
+        return False
 
-graph.set_entry_point(START,"plan")
-graph.add_edge("plan", "risk")
-graph.add_edge("risk", "approve")
-graph.add_edge("approve", "execute")
-graph.add_edge("execute", "verify")
-graph.add_edge("verify",END)
+    amount = slots.get("amount")
+    category = slots.get("category")
 
+    return amount is not None and category is not None
+
+
+# ------------------ graph ------------------
+
+graph = StateGraph(dict)
+
+graph.add_node("plan", plan_task)
+graph.add_node("execute", execute_tools)
+
+# Start → plan
+graph.add_edge(START, "plan")
+
+# CRITICAL FIX:
+# execute runs ONLY when the system gate allows it
+# (NOT when the LLM asks for tools)
+graph.add_conditional_edges(
+    "plan",
+    has_tool_calls,
+    {
+        True: "execute",
+        False: END,
+    },
+)
+
+# execute → end
+graph.add_edge("execute", END)
+
+# Compile workflow
 workflow = graph.compile()
