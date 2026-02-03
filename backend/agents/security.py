@@ -1,5 +1,5 @@
 
-from core.permissions import RiskLevel
+from backend.core.permissions import RiskLevel
 
 def assess_risk(user_message:str) -> RiskLevel:
     """
