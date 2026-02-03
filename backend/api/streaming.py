@@ -2,11 +2,11 @@ import asyncio
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from llm.client import OpenRouterLLMClient
-from llm.models import LLMRequest, LLMIntent
+from backend.llm.client import get_llm_client
+from backend.llm.models import LLMRequest, LLMIntent
 
 router = APIRouter()
-llm = OpenRouterLLMClient()
+llm = get_llm_client(streaming=True)
 
 
 @router.get("/llm")

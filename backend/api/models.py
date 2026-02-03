@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel
-from core.states import TaskState
+from backend.core.states import TaskState
 
 
 class TaskResponse(BaseModel):

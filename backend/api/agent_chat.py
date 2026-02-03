@@ -39,18 +39,19 @@ async def agent_chat(req: ChatRequest, request: Request):
         result = await run_chat_turn(
             session_id=req.thread_id,
             user_input=req.message,
-            user_id=user_id,   # <-- mandatory now
+            user_id=user_id,
         )
 
-        # ✅ HANDLE BOTH POSSIBLE RETURNS SAFELY
         if isinstance(result, dict):
             reply = result.get("reply", "")
             thread_id = result.get("thread_id")
+
         elif isinstance(result, ChatSessionRecord):
             reply = ""
             if result.messages:
                 reply = result.messages[-1].content
             thread_id = result.session_id
+
         else:
             raise RuntimeError("Unexpected return type from chat engine")
 
@@ -61,7 +62,9 @@ async def agent_chat(req: ChatRequest, request: Request):
 
     except HTTPException:
         raise
+
     except Exception as e:
+        # Production-safe error handling
         raise HTTPException(
             status_code=500,
             detail=str(e),

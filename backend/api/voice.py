@@ -1,8 +1,8 @@
 
 from fastapi import APIRouter, UploadFile, File, Depends
-from stt.transcribe import SpeechToTextService
-from api.dependencies import guarded
-from core.task_manager import TaskManager
+from backend.stt.transcribe import SpeechToTextService
+from backend.api.dependencies import guarded
+from backend.core.task_manager import TaskManager
 
 router = APIRouter()
 stt = SpeechToTextService()

@@ -1,11 +1,13 @@
 
 from fastapi import APIRouter, HTTPException, Depends
-from core.states import TaskState
-from core.task_manager import TaskManager
-from orchestrator.workflow import resume_after_approval
-from audit.logger import audit_log
-from api.dependencies import guarded
-from api.models import TaskResponse
+
+from backend.core.states import TaskState
+from backend.core.task_manager import TaskManager
+from backend.orchestrator.workflow import resume_after_approval
+from backend.audit.logger import audit_log
+from backend.api.dependencies import guarded
+from backend.api.models import TaskResponse
+
 
 router = APIRouter()
 manager = TaskManager()

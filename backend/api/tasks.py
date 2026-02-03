@@ -1,9 +1,9 @@
-
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
-from core.task_manager import TaskManager
-from api.dependencies import guarded
-from api.models import TaskResponse, TaskListResponse
+
+from backend.core.task_manager import TaskManager
+from backend.api.dependencies import guarded
+from backend.api.models import TaskResponse, TaskListResponse
 
 router = APIRouter()
 manager = TaskManager()

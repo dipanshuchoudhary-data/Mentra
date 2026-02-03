@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from orchestrator.chat_engine import run_chat_turn
-from db.chat_store import ChatStore
+from backend.orchestrator.chat_engine import run_chat_turn
+from backend.db.chat_store import ChatStore
 
 router = APIRouter()
 store = ChatStore()
